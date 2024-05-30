@@ -1,4 +1,4 @@
-# Eaglercraft Mobile UI v1.1
+# Eaglercraft Mobile UI v1.2
  A revamp of FlamedDogo99's eaglercraft mobile UI using pocked edition UI.<br>
  Currently **STILL IN BETA** testing/making so expect some bugs!
 
@@ -34,10 +34,10 @@
 - [x] Re-orginize button layout (With new icons)
 - [ ] Redo the display button functions
 - [x] Pocket Edition UI
-- [x] Toggle perspective
+- [x] Updated code from main
 - [x] Bug fixes from original
 - [ ] Config file for features
-- [ ] Organized Code
+- [x] Organized Code
 </details>
 
 <hr>
