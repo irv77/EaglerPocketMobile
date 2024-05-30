@@ -1,6 +1,8 @@
-# Eaglercraft Mobile UI
+# Eaglercraft Mobile UI v1.1
  A revamp of FlamedDogo99's eaglercraft mobile UI using pocked edition UI.<br>
  Currently **STILL IN BETA** testing/making so expect some bugs!
+
+![Ingame](.github/assets/ingame.png)<br>
 
 <hr>
 
@@ -17,12 +19,26 @@
 
 <hr>
 
-## Features
+## Features added
 
-- Pocket Edition UI
-- Better controls positioning
-- Toggle perspective
-- Bug fixes from original
+<details>
+<summary>Click here to expand feature list</summary>
+
+- [x] Strafe buttons when holding forward
+- [x] Crouch lock on hold
+- [x] Sprint button (sperate from double tapping forward)
+- [ ] Misc Platform support (Controller, Keyboard arrows, etc)
+- [ ] Cancel button for file upload
+- [ ] Styling for file upload
+- [x] Back button for Kiwi browser?
+- [x] Re-orginize button layout (With new icons)
+- [ ] Redo the display button functions
+- [x] Pocket Edition UI
+- [x] Toggle perspective
+- [x] Bug fixes from original
+- [ ] Config file for features
+- [ ] Organized Code
+</details>
 
 <hr>
 

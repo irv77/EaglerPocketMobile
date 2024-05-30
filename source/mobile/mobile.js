@@ -1,18 +1,3 @@
-// ==UserScript==
-// @name			Eagler Mobile
-// @description		Allows eaglercraft to run on mobile, adds touch controls, and fixes a few mobile-related crashes
-// @author			FlamedDogo99
-// @namespace		http://github.com/FlamedDogo99
-// @downloadURL		https://raw.githubusercontent.com/FlamedDogo99/EaglerMobile/main/eaglermobile.js
-// @license			Apache License 2.0 - http://www.apache.org/licenses/
-// @match			https://eaglercraft.com/mc/*
-// @grant			none
-// @version			1.1
-// @updateURL		https://raw.githubusercontent.com/FlamedDogo99/EaglerMobile/main/eaglermobile.js
-// @run-at			document-start
-// ==/UserScript==
-
-
 // Hides inventory button
 window.inInventory = false;
 // Used for changing touchmove events to mousemove events
@@ -62,6 +47,7 @@ Object.defineProperty(document, "pointerLockElement", {
 document.exitPointerLock = function() {
     window.fakelock = null
     document.dispatchEvent(new Event('pointerlockchange'));
+    console.log("hide ui")
     var hideButtonStyleDOM = document.getElementById('hideButtonStyle');
 	var hideInventoryStyleDOM = document.getElementById('hideInventoryStyle');
 	hideButtonStyleDOM.disabled = false;
@@ -140,9 +126,17 @@ customStyle.textContent = `
     button:active {
       opacity: .75;
     }
+    .minicontrol {
+      width: 7.5vh;
+      height: 7.5vh;
+      display: none;
+    }
+    .show {
+      display: block;
+    }
     .mini {
-      width: 3.5vw;
-      height: 3.5vw;
+      width: 6vh;
+      height: 6vh;
       margin: 1vh 0vh;
     }
     .crouch {
@@ -166,13 +160,20 @@ hideButtonStyle.id = "hideButtonStyle";
 hideButtonStyle.textContent = `
     #hideButton {
         display: none;
+    }
+    .minicontrol {
+      display: none;
     }`;
 document.documentElement.appendChild(hideButtonStyle);
+
 let hideInventoryStyle = document.createElement("style");
 hideInventoryStyle.id = "hideInventoryStyle";
 hideInventoryStyle.textContent = `
     #hideInventory {
         display: none;
+    }
+    .inventory {
+      display: none;
     }`;
 document.documentElement.appendChild(hideInventoryStyle);  
 
@@ -209,8 +210,8 @@ function insertCanvasElements() {
         e.movementX = touch.pageX - previousX;
         e.movementY = touch.pageY - previousY;
         var evt = new MouseEvent("mousemove", {
-            movementX: e.movementX,
-            movementY: e.movementY
+            movementX: e.movementX * 2,
+            movementY: e.movementY * 2
         });
         canvas.dispatchEvent(evt);
         previousX = touch.pageX;
@@ -224,11 +225,38 @@ function insertCanvasElements() {
     }, false)
     // Adds all of the touch screen controls
     // Theres probably a better way to do this but this works for now
-    var forwardButton = document.createElement('button');
+
+    function showStrafe() {
+      forwardLeftButton.classList.add("show")
+      forwardRightButton.classList.add("show")
+    }
+
+    function hideStrafe() {
+      forwardLeftButton.classList.remove("show")
+      forwardRightButton.classList.remove("show")
+    }
+
+  var forwardLeftButton = document.createElement('button');
+  forwardLeftButton.classList = "minicontrol"
+  forwardLeftButton.style.cssText = "left:5.5vh;bottom:22vh;background:url(mobile/uiUpLeft.png) no-repeat center;background-size: contain, cover;"
+  forwardLeftButton.addEventListener("touchstart", function(e){keyEvent("w", "keydown"),keyEvent("a", "keydown"), strafe=true}, false);
+  forwardLeftButton.addEventListener("touchend", function(e){keyEvent("w", "keyup"),keyEvent("a", "keyup"), hideStrafe(), strafe=false}, false);
+  forwardLeftButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
+  document.body.appendChild(forwardLeftButton);
+
+  var forwardRightButton = document.createElement('button');
+  forwardRightButton.classList = "minicontrol hidden"
+  forwardRightButton.style.cssText = "left:24vh;bottom:22vh;background:url(mobile/uiUpRight.png) no-repeat center;background-size: contain, cover;"
+  forwardRightButton.addEventListener("touchstart", function(e){keyEvent("w", "keydown"),keyEvent("d", "keydown"), strafe=true}, false);
+  forwardRightButton.addEventListener("touchend", function(e){keyEvent("w", "keyup"),keyEvent("d", "keyup"), hideStrafe(), strafe=false}, false);
+  forwardRightButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
+  document.body.appendChild(forwardRightButton);
+
+  var forwardButton = document.createElement('button');
 	forwardButton.id = "hideButton"
 	forwardButton.style.cssText = "left:14vh;bottom:22vh;background:url(mobile/uiUp.png) no-repeat center;background-size: contain, cover;"
-	forwardButton.addEventListener("touchstart", function(e){keyEvent("w", "keydown")}, false);
-	forwardButton.addEventListener("touchend", function(e){keyEvent("w", "keyup")}, false);
+	forwardButton.addEventListener("touchstart", function(e){keyEvent("w", "keydown"), showStrafe(), strafe=false}, false);
+	forwardButton.addEventListener("touchend", function(e){if (strafe===false) {hideStrafe()} keyEvent("w", "keyup")}, false);
 	forwardButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
 	document.body.appendChild(forwardButton);
 
@@ -268,15 +296,17 @@ function insertCanvasElements() {
 	crouchButton.id = "hideButton"
   crouchButton.classList = "crouch"
 	crouchButton.style.cssText = "left:14vh;bottom:12vh;"
-	crouchButton.addEventListener("touchstart", function(e){shiftKey("keydown")}, false);
-	crouchButton.addEventListener("touchend", function(e){shiftKey("keyup")}, false);
+	crouchButton.addEventListener("touchstart", function(e){shiftKey("keydown"), cshift=false}, false);
+	crouchButton.addEventListener("touchend", function(e){if (cshift===false) {shiftKey("keyup")}}, false);
 	crouchButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
+  crouchButton.addEventListener("pointerdown", function(e){ctimer = setTimeout(function(e){shiftKey("keydown"), cshift=true}, 1000)}, false);
+  crouchButton.addEventListener("pointerup", function(e){clearTimeout(ctimer)}, false);
 	document.body.appendChild(crouchButton);
 
 	var inventoryButton = document.createElement('button');
 	inventoryButton.id = "hideInventory"
   inventoryButton.classList = "mini"
-	inventoryButton.style.cssText = "right:11vw;bottom:0vh;background:url(mobile/uiInventory.png) no-repeat center;background-size: contain, cover;"
+	inventoryButton.style.cssText = "right:11.75vw;bottom:0vh;background:url(mobile/uiInventory.png) no-repeat center;background-size: contain, cover;"
 	inventoryButton.addEventListener("touchstart", function(e){
 		window.inInventory = (window.fakelock != null)
 		keyEvent("e", "keydown");
@@ -288,7 +318,7 @@ function insertCanvasElements() {
 	var chatButton = document.createElement('button');
 	chatButton.id = "hideButton"
   chatButton.classList = "mini"
-	chatButton.style.cssText = "left:43.5vw;top:0vh;background:url(mobile/uiChat.png) no-repeat center;background-size: contain, cover;"
+	chatButton.style.cssText = "left:44.5vw;top:0vh;background:url(mobile/uiChat.png) no-repeat center;background-size: contain, cover;"
 	chatButton.addEventListener("touchstart", function(e){keyEvent("t", "keydown")}, false);
 	chatButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
 	document.body.appendChild(chatButton);
@@ -296,7 +326,7 @@ function insertCanvasElements() {
   var angleButton = document.createElement('button');
 	angleButton.id = "hideButton"
   angleButton.classList = "mini"
-	angleButton.style.cssText = "left:51.5vw;top:0vh;background:url(mobile/uiAngle.png) no-repeat center;background-size: contain, cover;"
+	angleButton.style.cssText = "left:50.5vw;top:0vh;background:url(mobile/uiAngle.png) no-repeat center;background-size: contain, cover;"
 	angleButton.addEventListener("touchstart", function(e){keyEvent("f", "keydown"), keyEvent("5", "keydown")}, false);
 	angleButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
 	document.body.appendChild(angleButton);
@@ -310,10 +340,17 @@ function insertCanvasElements() {
 	exitButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
 	document.body.appendChild(exitButton);
 
+  var sprintButton = document.createElement('button');
+	sprintButton.id = "hideButton"
+	sprintButton.style.cssText = "right:6vh;bottom:54vh;background:url(mobile/uiSprint.png) no-repeat center;background-size: contain, cover;"
+	sprintButton.addEventListener("touchstart", function(e){keyEvent("r", "keydown")}, false);
+  sprintButton.addEventListener("touchend", function(e){keyEvent("r", "keyup")}, false);
+	sprintButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
+	document.body.appendChild(sprintButton);
+
 	var placeButton = document.createElement('button');
 	placeButton.id = "hideButton"
-	placeButton.textContent = "⊹";
-	placeButton.style.cssText = "right:5vh;bottom:35vh;"
+	placeButton.style.cssText = "right:6vh;bottom:38vh;background:url(mobile/uiInteract.png) no-repeat center;background-size: contain, cover;"
 	placeButton.addEventListener("touchstart", function(e){mouseEvent(2, "mousedown", canvas)}, false);
 	placeButton.addEventListener("touchend", function(e){mouseEvent(2, "mouseup", canvas)}, false);
 	placeButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
@@ -321,8 +358,7 @@ function insertCanvasElements() {
 
 	var breakButton = document.createElement('button');
 	breakButton.id = "hideButton"
-	breakButton.textContent = "🗡";
-	breakButton.style.cssText = "right:25vh;bottom:45vh;"
+	breakButton.style.cssText = "right:20vh;bottom:43vh;background:url(mobile/uiAttack.png) no-repeat center;background-size: contain, cover;"
 	breakButton.addEventListener("touchstart", function(e){mouseEvent(0, "mousedown", canvas)}, false);
 	breakButton.addEventListener("touchend", function(e){mouseEvent(0, "mouseup", canvas)}, false);
 	breakButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
@@ -331,8 +367,7 @@ function insertCanvasElements() {
 	var scrollUpButton = document.createElement('button');
 	scrollUpButton.id = "hideButton"
   scrollUpButton.classList = "mini"
-	scrollUpButton.textContent = "⇨";
-	scrollUpButton.style.cssText = "right:3vw;bottom:0vh;"
+	scrollUpButton.style.cssText = "right:5.25vw;bottom:0vh;background:url(mobile/uiSRight.png) no-repeat center;background-size: contain, cover;"
 	scrollUpButton.addEventListener("touchstart", function(e){
 		canvas.dispatchEvent(new WheelEvent("wheel", {"wheelDeltaY": -10}))
 	}, false);
@@ -342,8 +377,7 @@ function insertCanvasElements() {
 	var scrollDownButton = document.createElement('button');
 	scrollDownButton.id = "hideButton"
   scrollDownButton.classList = "mini"
-	scrollDownButton.textContent = "⇦";
-	scrollDownButton.style.cssText = "right:15vw;bottom:0vh;"
+	scrollDownButton.style.cssText = "right:15vw;bottom:0vh;background:url(mobile/uiSLeft.png) no-repeat center;background-size: contain, cover;"
 	scrollDownButton.addEventListener("touchstart", function(e){
 		canvas.dispatchEvent(new WheelEvent("wheel", {"wheelDeltaY": 10}))
 	}, false);
@@ -353,8 +387,7 @@ function insertCanvasElements() {
 	var throwButton = document.createElement('button');
 	throwButton.id = "hideButton"
   throwButton.classList = "mini"
-	throwButton.textContent = "Q";
-	throwButton.style.cssText = "right:7vw;bottom:0vh;"
+	throwButton.style.cssText = "right:8.5vw;bottom:0vh;background:url(mobile/uiDrop.png) no-repeat center;background-size: contain, cover;"
 	throwButton.addEventListener("touchstart", function(e){
 		window.inInventory = (window.fakelock != null)
 		keyEvent("q", "keydown");
