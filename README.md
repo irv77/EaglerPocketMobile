@@ -1,6 +1,7 @@
-# <img src=".github/assets/logo.png" alt="EPM Logo" align="right" width="128px">Eagler Pocket Mobile v1.3
+# <img src=".github/assets/logo.png" alt="EPM Logo" align="right" width="120px">Eagler Pocket Mobile v1.3
  A revamp of FlamedDogo99's eaglercraft mobile UI using pocked edition UI.<br>
  Now currently just a reskin with different positions!
+
 
 <img src=".github/assets/ingame.png" alt="Ingame Photo"><br>
 
@@ -17,10 +18,10 @@
  Just add following code into `index.html` file of your eaglercraft!<br>
 
  ```javascript
-<script type="text/javascript" src="eaglerpocketmobile.user.js></script>
+<script type="text/javascript" src="eaglerpocketmobile.user.js"></script>
  ```
  
- _A demo of the code can be seen in the [Demo's folder](https://github.com/irv77/eaglercraft-mobile/tree/main/demo/)_
+ _A demo of the code can be seen in the [Demo's folder](https://github.com/irv77/EaglerPocketMobile/tree/main/demo/)_
 
 <hr>
 
@@ -47,4 +48,4 @@
 
 <hr>
 
->__Finally [here](https://irv77.github.io/eaglercraft-mobile/demo/) is the live version of the code!__
+>__Finally [here](https://irv77.github.io/EaglerPocketMobile/demo/) is the live version of the code!__
