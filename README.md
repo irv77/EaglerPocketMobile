@@ -1,19 +1,24 @@
-# Eaglercraft Mobile UI v1.2
+# <img src=".github/assets/logo.png" alt="EPM Logo" align="right" width="128px">Eagler Pocket Mobile v1.3
  A revamp of FlamedDogo99's eaglercraft mobile UI using pocked edition UI.<br>
- Currently **STILL IN BETA** testing/making so expect some bugs!
+ Now currently just a reskin with different positions!
 
-![Ingame](.github/assets/ingame.png)<br>
+<img src=".github/assets/ingame.png" alt="Ingame Photo"><br>
 
 <hr>
 
-## Implementation
- Add following code into `index.html` file of eaglercraft<br>
+ ## Versions
+ __v1.3__ - Condensed code into one file and updated to match original.<br>
+
+ [eaglercraft.com](https://eaglercraft.com) is using __v1.2__ (Not updated yet)
+
+ <hr>
+
+## Installation
+ Just add following code into `index.html` file of your eaglercraft!<br>
 
  ```javascript
-<script type="text/javascript" src="mobile/mobile.js"></script>
+<script type="text/javascript" src="eaglerpocketmobile.user.js></script>
  ```
-
- Then add the [`mobile`](https://github.com/irv77/eaglercraft-mobile/tree/main/source/) folder into the same folder.<br>
  
  _A demo of the code can be seen in the [Demo's folder](https://github.com/irv77/eaglercraft-mobile/tree/main/demo/)_
 
