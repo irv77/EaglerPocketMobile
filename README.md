@@ -10,7 +10,7 @@
  ## Versions
  __v1.3__ - Condensed code into one file and updated to match original.<br>
 
- [eaglercraft.com](https://eaglercraft.com) is using __v1.2__ (Not updated yet)
+ [eaglercraft.com](https://eaglercraft.com) is using __v1.3__
 
  <hr>
 
