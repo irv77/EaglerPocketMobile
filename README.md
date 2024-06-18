@@ -1,4 +1,4 @@
-# <img src=".github/assets/logo.png" alt="EPM Logo" align="right" width="120px">Eagler Pocket Mobile v1.3
+# <img src=".github/assets/logo.png" alt="EPM Logo" align="right" width="120px">Eagler Pocket Mobile v1.31
  A revamp of FlamedDogo99's eaglercraft mobile UI using pocked edition UI.<br>
  Now currently just a reskin with different positions!
 
@@ -8,6 +8,7 @@
 <hr>
 
  ## Versions
+  __v1.31__ - Added offline file (code update in the future).<br>
  __v1.3__ - Condensed code into one file and updated to match original.<br>
 
  [eaglercraft.com](https://eaglercraft.com) is using __v1.3__
@@ -22,6 +23,7 @@
  ```
  
  _A demo of the code can be seen in the [Demo's folder](https://github.com/irv77/EaglerPocketMobile/tree/main/demo/)_
+ _Or play the offline version in the [Offline file!](https://github.com/irv77/EaglerPocketMobile/blob/main/EaglercraftX_18_u35_Offline_Signed.html)_
 
 <hr>
 
