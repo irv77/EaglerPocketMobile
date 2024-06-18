@@ -22,8 +22,8 @@
 <script type="text/javascript" src="eaglerpocketmobile.user.js"></script>
  ```
  
- _A demo of the code can be seen in the [Demo's folder](https://github.com/irv77/EaglerPocketMobile/tree/main/demo/)_
- _Or play the offline version in the [Offline file!](https://github.com/irv77/EaglerPocketMobile/blob/main/EaglercraftX_18_u35_Offline_Signed.html)_
+ _A demo of the code can be seen in the [Demo's folder](https://github.com/irv77/EaglerPocketMobile/tree/main/demo/)_<br>
+ _Or play the offline version in the [Offline file!](https://github.com/irv77/EaglerPocketMobile/blob/main/EaglercraftX_1.8_u35_Offline_Signed.html)_
 
 <hr>
 
