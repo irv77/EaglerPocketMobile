@@ -1,4 +1,4 @@
-# <img src=".github/assets/logo.png" alt="EPM Logo" align="right" width="120px">Eagler Pocket Mobile v1.31
+# <img src=".github/assets/logo.png" alt="EPM Logo" align="right" width="120px">Eagler Pocket Mobile v1.40
  A revamp of FlamedDogo99's eaglercraft mobile UI using pocked edition UI.<br>
  Now currently just a reskin with different positions!
 
@@ -8,10 +8,11 @@
 <hr>
 
  ## Versions
+   __v1.40__ - Updated to the most modern version from FlamedDogo.<br>
   __v1.31__ - Added offline file (code update in the future).<br>
- __v1.3__ - Condensed code into one file and updated to match original.<br>
+ __v1.30__ - Condensed code into one file and updated to match original.<br>
 
- [eaglercraft.com](https://eaglercraft.com) is using __v1.3__
+ [eaglercraft.com](https://eaglercraft.com) is using __v1.31__
 
  <hr>
 
@@ -36,11 +37,11 @@
 - [x] Crouch lock on hold
 - [x] Sprint button (sperate from double tapping forward)
 - [ ] Misc Platform support (Controller, Keyboard arrows, etc)
-- [ ] Cancel button for file upload
-- [ ] Styling for file upload
+- [x] Cancel button for file upload
+- [x] Styling for file upload
 - [x] Back button for Kiwi browser?
 - [x] Re-orginize button layout (With new icons)
-- [ ] Redo the display button functions
+- [x] Redo the display button functions
 - [x] Pocket Edition UI
 - [x] Updated code from main
 - [x] Bug fixes from original

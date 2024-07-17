@@ -1,3 +1,6 @@
+// Removed brainless unsafeWindow 
+console.log("Eagler Pocket Mobile v1.40")
+// TODO: remove the mobile check is implement the dynamic enabling and disabling of individual features
 function isMobile() {
     try {
         document.createEvent("TouchEvent");
@@ -9,39 +12,55 @@ function isMobile() {
 if(!isMobile()) {
     alert("WARNING: This script was created for mobile, and may break functionality in non-mobile browsers!");
 }
-window.keyboardEnabled = false;
-window.crouchLock = false;
-window.sprintLock = false;
-window.keyboardFix = false; // temporarily set to true until I can figure out whats going wrong with the event listener in charge of switching it
-// Used for changing touchmove events to mousemove events
-var previousTouchX = null;
-var previousTouchY = null;
-var startTouchX = null;
-// better charCodeAt function
+// TODO: consolidate all of these into a single object?
+window.crouchLock = false; // Used for crouch mobile control
+window.sprintLock = false; // Used for sprint mobile control
+window.keyboardFix = false; // keyboardFix ? "Standard Keyboard" : "Compatibility Mode"
+window.inputFix = false; // If true, Duplicate Mode
+window.blockNextInput = false; // Used for Duplicate Mode 
+window.hiddenInputFocused = false; // Used for keyboard display on mobile
+window.canvasTouchMode = 0; // Used for canvas touch handling
+/*
+    0   Idle
+    1   Touch initiated
+    2   Primary touch
+    3   Secondary touch
+    4   Scroll
+    5   Finished
+*/
+window.canvasTouchStartX = null;
+window.canvasTouchStartY = null;
+window.canvasTouchPreviousX = null;
+window.canvasTouchPreviousY = null;
+window.canvasPrimaryID = null;
+window.buttonTouchStartX = null;
+
+// charCodeAt is designed for unicode characters, and doesn't match the behavior of the keyCodes used by KeyboardEvents, thus necessitating this function
 String.prototype.toKeyCode = function() {
-    const keyCodeList = {"0": 48, "1": 49, "2": 50, "3": 51, "4": 52, "5": 53, "6": 54, "7": 55, "8": 56, "9": 57, "backspace": 8, "tab": 9, "enter": 13, "shift": 16, "ctrl": 17, "alt": 18, "pause_break": 19, "caps_lock": 20, "escape": 27, " ": 32, "page_up": 33, "page_down": 34, "end": 35, "home": 36, "left_arrow": 37, "up_arrow": 38, "right_arrow": 39, "down_arrow": 40, "insert": 45, "delete": 46, "a": 65, "b": 66, "c": 67, "d": 68, "e": 69, "f": 70, "g": 71, "h": 72, "i": 73, "j": 74, "k": 75, "l": 76, "m": 77, "n": 78, "o": 79, "p": 80, "q": 81, "r": 82, "s": 83, "t": 84, "u": 85, "v": 86, "w": 87, "x": 88, "y": 89, "z": 90, "left_window_key": 91, "right_window_key": 92, "select_key": 93, "numpad_0": 96, "numpad_1": 97, "numpad_2": 98, "numpad_3": 99, "numpad_4": 100, "numpad_5": 101, "numpad_6": 102, "numpad_7": 103, "numpad_8": 104, "numpad_9": 105, "*": 106, "+": 107, "-": 109, ".": 110, "/": 111, "f1": 112, "f2": 113, "f3": 114, "f4": 115, "f5": 116, "f6": 117, "f7": 118, "f8": 119, "f9": 120, "f10": 121, "f11": 122, "f12": 123, "num_lock": 144, "scroll_lock": 145, ";": 186, "=": 187, ",": 188, "-": 189, ".": 190, "/": 191, "`": 192, "[": 219, "\\": 220, "]": 221, "\"": 222};
+        const keyCodeList = {"0": 48, "1": 49, "2": 50, "3": 51, "4": 52, "5": 53, "6": 54, "7": 55, "8": 56, "9": 57, "backspace": 8, "tab": 9, "enter": 13, "shift": 16, "ctrl": 17, "alt": 18, "pause_break": 19, "caps_lock": 20, "escape": 27, " ": 32, "page_up": 33, "page_down": 34, "end": 35, "home": 36, "left_arrow": 37, "up_arrow": 38, "right_arrow": 39, "down_arrow": 40, "insert": 45, "delete": 46, "a": 65, "b": 66, "c": 67, "d": 68, "e": 69, "f": 70, "g": 71, "h": 72, "i": 73, "j": 74, "k": 75, "l": 76, "m": 77, "n": 78, "o": 79, "p": 80, "q": 81, "r": 82, "s": 83, "t": 84, "u": 85, "v": 86, "w": 87, "x": 88, "y": 89, "z": 90, "left_window_key": 91, "right_window_key": 92, "select_key": 93, "numpad_0": 96, "numpad_1": 97, "numpad_2": 98, "numpad_3": 99, "numpad_4": 100, "numpad_5": 101, "numpad_6": 102, "numpad_7": 103, "numpad_8": 104, "numpad_9": 105, "*": 106, "+": 107, "-": 109, ".": 110, "/": 111, "f1": 112, "f2": 113, "f3": 114, "f4": 115, "f5": 116, "f6": 117, "f7": 118, "f8": 119, "f9": 120, "f10": 121, "f11": 122, "f12": 123, "num_lock": 144, "scroll_lock": 145, ";": 186, "=": 187, ",": 188, "-": 189, ".": 190, "/": 191, "\u0060": 192, "[": 219, "\u005C": 220, "]": 221, "\u0022": 222};
     return keyCodeList[this];
 }
-// Ignores keydown events that don't have the isValid parameter set to true
+// Overrides the addEventListener behavior to all code injection on keydown event listeners. This function has thrown TypeErrors on some Android devices because fn is not recognized as a function
+// This is used by Compatibility Mode to block invalid keyEvents
 const _addEventListener = EventTarget.prototype.addEventListener;
 Object.defineProperty(EventTarget.prototype, "addEventListener", {
     value: function (type, fn, ...rest) {
-        if(type == 'keydown') {
+        if(type == 'keydown') { // Check if a keydown event is being added
             _addEventListener.call(this, type, function(...args) {
-                if(!args[0].isValid && window.keyboardFix) {
+                if(args[0].isTrusted && window.keyboardFix) { // When we are in compatibility mode, we ignore all trusted keyboard events
                     return;
                 }
-                return fn.apply(this, args);
+                return fn.apply(this, args); // Appends the rest of the function specified by addEventListener
             }, ...rest);
-        } else {
+        } else { // If it's not a keydown event, behave like normal (hopefully)
             _addEventListener.call(this, type, fn, ...rest);
         }
     }
 });
-// Allows typing in #hiddenInput
+// Overrides preventDefault, because on some (Android) devices you couldn't type into hiddenInput
 const _preventDefault = Event.prototype.preventDefault;
-Event.prototype.preventDefault = function() {
-  if(document.activeElement.id != "hiddenInput") {
+Event.prototype.preventDefault = function(shouldBypass) {
+  if(document.activeElement.id != "hiddenInput" || shouldBypass) { // activeElement is what element is currently focused
       this._preventDefault =  _preventDefault;
       this._preventDefault();
   }
@@ -54,18 +73,24 @@ Event.prototype.preventDefault = function() {
 function keyEvent(name, state) {
     const charCode = name.toKeyCode();
     let evt = new KeyboardEvent(state, {
-        key: name,
-        keyCode: charCode,
-        which: charCode
+        "key": name,
+        "keyCode": charCode,
+        "which": charCode
     });
-    evt.isValid = true; // Disables fix for bad keyboard input
     window.dispatchEvent(evt);
 }
-function mouseEvent(number, state, canvas) {
-    canvas.dispatchEvent(new PointerEvent(state, {"button": number}))
+function mouseEvent(number, state, element, event = {"clientX": 0, "clientY" : 0, "screenX": 0, "screenY": 0}) {
+    element.dispatchEvent(new PointerEvent(state, {
+        "button": number,
+        "buttons": number,
+        "clientX": event.clientX,
+        "clientY" : event.clientY,
+        "screenX": event.screenX,
+        "screenY": event.screenY
+    }));
 }
-function wheelEvent(canvas, delta) {
-    canvas.dispatchEvent(new WheelEvent("wheel", {
+function wheelEvent(element, delta) {
+    element.dispatchEvent(new WheelEvent("wheel", {
         "wheelDeltaY": delta
   }));
 }
@@ -80,12 +105,12 @@ function setButtonVisibility(pointerLocked) {
 window.fakelock = null;
 
 Object.defineProperty(Element.prototype, "requestPointerLock", {
-	value: function() {
-		window.fakelock = this
-		document.dispatchEvent(new Event('pointerlockchange'));
-		setButtonVisibility(true);
-		return true
-	}
+    value: function() {
+        window.fakelock = this
+        document.dispatchEvent(new Event('pointerlockchange'));
+        setButtonVisibility(true);
+        return true
+    }
 });
 
 
@@ -97,23 +122,23 @@ Object.defineProperty(Document.prototype, "pointerLockElement", {
 });
 // When exitPointerLock is called, this dispatches an event, clears the
 Object.defineProperty(Document.prototype, "exitPointerLock", {
-	value: function() {
-		window.fakelock = null
-		document.dispatchEvent(new Event('pointerlockchange'));
-		setButtonVisibility(false);
-		return true
-	}
+    value: function() {
+        window.fakelock = null
+        document.dispatchEvent(new Event('pointerlockchange'));
+        setButtonVisibility(false);
+        return true
+    }
 });
 
 // FULLSCREEN
 window.fakefull = null;
 // Stops the client from crashing when fullscreen is requested
 Object.defineProperty(Element.prototype, "requestFullscreen", {
-	value: function() {
-		window.fakefull = this
-		document.dispatchEvent(new Event('fullscreenchange'));
-		return true
-	}
+    value: function() {
+        window.fakefull = this
+        document.dispatchEvent(new Event('fullscreenchange'));
+        return true
+    }
 });
 Object.defineProperty(document, "fullscreenElement", {
     get: function() {
@@ -121,11 +146,11 @@ Object.defineProperty(document, "fullscreenElement", {
     }
 });
 Object.defineProperty(Document.prototype, "exitFullscreen", {
-	value: function() {
-		window.fakefull = null
-		document.dispatchEvent(new Event('fullscreenchange'));
-		return true
-	}
+    value: function() {
+        window.fakefull = null
+        document.dispatchEvent(new Event('fullscreenchange'));
+        return true
+    }
 });
 
 // FILE UPLOADING
@@ -135,17 +160,17 @@ const _createElement = document.createElement;
 document.createElement = function(type, ignore) {
     this._createElement = _createElement;
     var element = this._createElement(type);
-    if(type == "input" && !ignore) {
-    	document.querySelectorAll('#fileUpload').forEach(e => e.parentNode.removeChild(e));
-    	element.id = "fileUpload";
-    	element.addEventListener('change', function(e) {
-    		element.hidden = true;
-    		element.style.display = "none";
-    	}, {passive: false, once: true});
-    	window.addEventListener('focus', function(e) {
+    if(type == "input" && !ignore) { // We set the ingore flag to true when we create the hiddenInput
+        document.querySelectorAll('#fileUpload').forEach(e => e.parentNode.removeChild(e)); // Get rid of any left over fileUpload inputs
+        element.id = "fileUpload";
+        element.addEventListener('change', function(e) {
+            element.hidden = true;
+            element.style.display = "none";
+        }, {passive: false, once: true});
+        window.addEventListener('focus', function(e) {
             setTimeout(() => {
                 element.hidden = true;
-    			element.style.display = "none";
+                element.style.display = "none";
             }, 300)
         }, { once: true })
         document.body.appendChild(element);
@@ -171,7 +196,7 @@ inMenuStyle.textContent = `
 document.documentElement.appendChild(inMenuStyle);
 
 
-// The canvas is created by the client after it finishes unzipping and loading. When the canvas is created, this applies any necessary event listeners
+// The canvas is created by the client after it finishes unzipping and loading. When the canvas is created, this applies any necessary event listeners and creates buttons
 function waitForElm(selector) {
     return new Promise(resolve => {
         if (document.querySelector(selector)) {
@@ -195,58 +220,119 @@ function createTouchButton(buttonClass, buttonDisplay, elementName) {
     touchButton.classList.add(buttonDisplay);
     touchButton.classList.add("mobileControl");
     touchButton.addEventListener("touchmove", function(e){e.preventDefault()}, false);
+    touchButton.addEventListener("contextmenu", function(e){e.preventDefault()});
     return touchButton;
 }
 
-function toggleKeyboard() {
-    const keyboardInput = document.getElementById('hiddenInput');
-    if (window.keyboardEnabled) {
-        window.keyboardEnabled = false;
-        keyboardInput.blur();
-    } else {
-        window.keyboardEnabled = true;
-        keyboardInput.select();
-    }
-}
 
 waitForElm('canvas').then(() => {insertCanvasElements()});
 function insertCanvasElements() {    
     // Translates touchmove events to mousemove events when inGame, and touchmove events to wheele events when inMenu
     var canvas = document.querySelector('canvas');
-    canvas.addEventListener("touchmove", function(e) {
-        e.preventDefault();
-        const touch = e.targetTouches[0]; // We can get away with this because every other touch event will be on different elements
+    canvas.addEventListener("touchstart", function(e) {
+        if(window.canvasTouchMode < 2) { // If a touch is initiated but not assigned
+            if(window.canvasPrimaryID == null) {
+                window.canvasTouchMode = 1;
+                const primaryTouch = e.changedTouches[0];
+                window.canvasPrimaryID = primaryTouch.identifier
+                canvasTouchStartX = primaryTouch.clientX;
+                canvasTouchStartY = primaryTouch.clientY;
+                canvasTouchPreviousX = canvasTouchStartX
+                canvasTouchPreviousY = canvasTouchStartY
 
-        if (!previousTouchX) {
-            previousTouchX = touch.pageX;
-            previousTouchY = touch.pageY;
+                window.touchTimer = setTimeout(function(e) {
+                    // If our touch is still set to initiaited, set it to secondary touch
+                    if(window.canvasTouchMode == 1) {
+                        window.canvasTouchMode = 3;
+                        mouseEvent(2, "mousedown", canvas, primaryTouch)
+                        if(window.fakelock) { // We only dispatch mouseup inGame because we want to be able to click + drag items in GUI's
+                            mouseEvent(2, "mouseup", canvas, primaryTouch)
+                        }
+                    }
+                }, 300);
+            } else if(window.canvasTouchMode == 1 && !window.fakelock) { // If we already have a primary touch, it means we're using two fingers
+                window.canvasTouchMode = 4;
+                clearTimeout(window.crouchTimer); // TODO: Find out why this isn't redudnant
+            }
         }
-        e.movementX = touch.pageX - previousTouchX;
-        e.movementY = touch.pageY - previousTouchY;
-        var evt = window.fakelock ? new MouseEvent("mousemove", {movementX: e.movementX, movementY: e.movementY}) : new WheelEvent("wheel", {"wheelDeltaY": e.movementY});
-        canvas.dispatchEvent(evt);
-        previousTouchX = touch.pageX;
-        previousTouchY = touch.pageY;
     }, false);
 
-    canvas.addEventListener("touchend", function(e) {
-        previousTouchX = null;
-        previousTouchY = null; 
-    }, false)
-    //Updates button visibility on load
-    setButtonVisibility(window.fakelock != null);
-    // Adds all of the touch screen controls
-    // Theres probably a better way to do this but this works for now
+    canvas.addEventListener("touchmove", function(e) {
+        e.preventDefault() // Prevents window zoom when using two fingers
+        var primaryTouch;
+        for (let touchIndex = 0; touchIndex < e.targetTouches.length; touchIndex++) { // Iterate through our touches to find a touch event matching the primary touch ID
+            if(e.targetTouches[touchIndex].identifier == window.canvasPrimaryID) {
+                primaryTouch = e.targetTouches[touchIndex];
+                break;
+            }
+        }
+        if(primaryTouch) {
+            primaryTouch.distanceX = primaryTouch.clientX - canvasTouchStartX;
+            primaryTouch.distanceY = primaryTouch.clientY - canvasTouchStartY;
+            primaryTouch.squaredNorm = (primaryTouch.distanceX * primaryTouch.distanceX) + (primaryTouch.distanceY * primaryTouch.distanceY);
+            primaryTouch.movementX = primaryTouch.clientX - canvasTouchPreviousX;
+            primaryTouch.movementY = primaryTouch.clientY - canvasTouchPreviousY;
+            if(window.canvasTouchMode == 1) { // If the primary touch is still only initiated
+                if (primaryTouch.squaredNorm > 25) { // If our touch becomes a touch + drag
+                    clearTimeout(window.crouchTimer);
+                    window.canvasTouchMode = 2;
+                    if(!window.fakelock) { // When we're inGame, we don't want to be placing blocks when we are moving the camera around
+                        mouseEvent(1, "mousedown", canvas, primaryTouch);
+                    }
+                }
+            } else { // If our touch is primary, secondary, scroll or finished
+                if(window.canvasTouchMode == 4) { // If our touch is scrolling
+                    wheelEvent(canvas, primaryTouch.movementY)
+                } else {
+                    canvas.dispatchEvent(new MouseEvent("mousemove", {
+                        "clientX": primaryTouch.clientX,
+                        "clientY": primaryTouch.clientY,
+                        "screenX": primaryTouch.screenX,
+                        "screenY": primaryTouch.screenY, // The top four are used for item position when in GUI's, the bottom two are for moving the camera inGame
+                        "movementX": primaryTouch.movementX,
+                        "movementY": primaryTouch.movementY
+                    }));
+                }
+            }
+            canvasTouchPreviousX = primaryTouch.clientX
+            canvasTouchPreviousY = primaryTouch.clientY
+        }
+    }, false);
+
+    function canvasTouchEnd(e) {
+        for(let touchIndex = 0; touchIndex < e.changedTouches.length; touchIndex++) { // Iterate through changed touches to find primary touch
+            if(e.changedTouches[touchIndex].identifier == window.canvasPrimaryID) {
+                let primaryTouch = e.changedTouches[touchIndex]
+                // When any of the controlling fingers go away, we want to wait until we aren't receiving any other touch events
+                if(window.canvasTouchMode == 2) {
+                    mouseEvent(1, "mouseup", canvas, primaryTouch)
+                } else if (window.canvasTouchMode == 3) {
+                    e.preventDefault(); // This prevents some mobile devices from dispatching a mousedown + mouseup event after a touch is ended
+                    mouseEvent(2, "mouseup", canvas, primaryTouch)
+                }
+                window.canvasTouchMode = 5;
+            }
+        }
+        if(e.targetTouches.length == 0) { // We want to wait until all fingers are off the canvas before we reset for the next cycle
+            window.canvasTouchMode = 0;
+            window.canvasPrimaryID = null;
+        }
+    }
+
+    canvas.addEventListener("touchend", canvasTouchEnd, false); 
+    canvas.addEventListener("touchcancel", canvasTouchEnd, false); // TODO: Find out why this is different than touchend
+    setButtonVisibility(window.fakelock != null); //Updates our mobile controls when the canvas finally loads
+    // All of the touch buttons
     let strafeRightButton = createTouchButton("strafeRightButton", "inGame", "div");
-	strafeRightButton.classList.add("strafeSize");
+    strafeRightButton.classList.add("strafeSize");
     strafeRightButton.style.cssText = "left:24vh;bottom:22vh;"
     document.body.appendChild(strafeRightButton);
     let strafeLeftButton = createTouchButton("strafeLeftButton", "inGame", "div");
-	strafeLeftButton.classList.add("strafeSize");
+    strafeLeftButton.classList.add("strafeSize");
     strafeLeftButton.style.cssText = "left:5.5vh;bottom:22vh;"
     document.body.appendChild(strafeLeftButton);
   
-    let forwardButton = createTouchButton("forwardButton", "inGame", "div");
+    let forwardButton = createTouchButton("forwardButton", "inGame", "div"); // We use a div here so can use the targetTouches property of touchmove events. If we didn't it would require me to make an actual touch handler and I don't want to
     forwardButton.style.cssText = "left:14vh;bottom:22vh;"
     forwardButton.addEventListener("touchstart", function(e){
         keyEvent("w", "keydown");
@@ -256,12 +342,12 @@ function insertCanvasElements() {
     }, false);
     forwardButton.addEventListener("touchmove", function(e) {
         e.preventDefault();
-        const touch = e.targetTouches[0]; // We can get away with this because every other touch event will be on different elements
+        const touch = e.targetTouches[0]; // We are just hoping that the user will only ever use one finger on the forward button
 
-        if (!startTouchX) {
-            startTouchX = touch.pageX;
+        if (!buttonTouchStartX) { // TODO: move this to a touchstart event handler
+            buttonTouchStartX = touch.pageX;
         }
-        let movementX = touch.pageX - startTouchX;
+        let movementX = touch.pageX - buttonTouchStartX;
         if((movementX * 10) > window.innerHeight) {
             strafeRightButton.classList.add("active");
             strafeLeftButton.classList.remove("active");
@@ -280,7 +366,7 @@ function insertCanvasElements() {
         }
     }, false);
     forwardButton.addEventListener("touchend", function(e) {
-        keyEvent("w", "keyup");
+        keyEvent("w", "keyup"); // Luckily, it doesn't seem like eagler cares if we dispatch extra keyup events, so we can get away with just dispatching all of them here
         keyEvent("d", "keyup");
         keyEvent("a", "keyup");
         strafeRightButton.classList.remove("active");
@@ -289,7 +375,7 @@ function insertCanvasElements() {
         strafeLeftButton.classList.add("hide");
         forwardButton.classList.remove("active");
 
-        startTouchX = null;
+        buttonTouchStartX = null;
     }, false);
     strafeRightButton.classList.add("hide");
     strafeLeftButton.classList.add("hide");
@@ -322,7 +408,7 @@ function insertCanvasElements() {
     crouchButton.addEventListener("touchstart", function(e){
         keyEvent("shift", "keydown")
         window.crouchLock = window.crouchLock ? null : false
-        crouchTimer = setTimeout(function(e) {
+        window.crouchTimer = setTimeout(function(e) { // Allows us to lock the button after a long press
             window.crouchLock = (window.crouchLock != null);
             crouchButton.classList.toggle('active');
         }, 1000);
@@ -334,66 +420,127 @@ function insertCanvasElements() {
             crouchButton.classList.remove('active');
             window.crouchLock = false
         }
-        clearTimeout(crouchTimer);
+        clearTimeout(window.crouchTimer);
     }, false);
     document.body.appendChild(crouchButton);
     let inventoryButton = createTouchButton("inventoryButton", "inGame");
-	inventoryButton.classList.add("smallMobileControl");
+    inventoryButton.classList.add("smallMobileControl");
     inventoryButton.style.cssText = "right:19.5vh;bottom:0vh;"
-    inventoryButton.addEventListener("touchstart", function(e){keyEvent("e", "keydown")}, false);
-    inventoryButton.addEventListener("touchend", function(e){keyEvent("e", "keyup")}, false);
+    inventoryButton.addEventListener("touchstart", function(e) {
+        keyEvent("e", "keydown");
+    }, false);
+    inventoryButton.addEventListener("touchend", function(e){
+        keyEvent("shift", "keydown"); // Sometimes shift gets stuck on, which interferes with item manipulation in GUI's
+        keyEvent("shift", "keyup"); // Sometimes shift gets stuck on, which interferes with item manipulation in GUI's
+        keyEvent("e", "keyup");
+    }, false);
     document.body.appendChild(inventoryButton);
     let exitButton = createTouchButton("exitButton", "inMenu");
-	exitButton.classList.add("smallMobileControl");
+    exitButton.classList.add("smallMobileControl");
     exitButton.style.cssText = "top: 0.5vh; margin: auto; left: 1vh; right:8vh;"
     exitButton.addEventListener("touchstart", function(e){keyEvent("`", "keydown")}, false);
     exitButton.addEventListener("touchend", function(e){keyEvent("`", "keyup")}, false);
     document.body.appendChild(exitButton);
-    // input for keyboard button
+    // ---Input Handling---
+    // This code is a mess, specifically because Android is so so SO inconsistent with how it handles the keyboard
+    // Some keyboards dispatch key events, some directly append text, and none of them meet the most basic standards supported by most other devices
+    // This mess is my attempt at dealing with that, and it will most likely only ever be triggered by Android
+    // 
+    // It has three main modes.
+    // 1) Standard keyboard mode:
+    // This mode keeps the hiddenInput empty, saves the last key press, and on every keypress checks if it the keys are being pressed incorrectly.
+    // If there is a problem, it switches to compatibility mode, using beforeinput and input events instead of keydown and keyup
+    // 2) Compatibility mode:
+    // This most is most likely going to be used by Android, because Android only every dispatches keyCode 229 for any keypress
+    // When we enter this mode, we grab the last known key press and redispatch it, and programatically dispatch key events by reading e.inputType and e.data from beforeinput
+    // Unfortunately, Android is weird with this as well. Sometimes it only dispatches insertCompositionText events, and sometimes it gives the correct inputTypes as well
+    // Additionally, programmatically setting the input's text contents (BECAUSE ANDROID IGNORES PREVENTDEFAULT AGHHHHH) dispatches a repeat of the previous event
+    // Luckily, we can check if this happens when we first create the input, which necessitates the third mode:
+    // 3) Duplicate mode:
+    // If we are getting duplicate inputs, this mode ignores every other input if it matches the state saved in window.previousKey
+    // If users make it to this mode and still are having issues, it may be best just to remove support for their device
+    // ---Input Handling--- 
     let hiddenInput = document.createElement('input', true);
     hiddenInput.id = "hiddenInput"
     hiddenInput.classList.add("inMenu")
-    // We are hiding the text input behind button because opacity was causing problems.
-    hiddenInput.style.cssText = "position:absolute;top: 0vh; margin: auto; left: 8vh; right:0vh;font-size:20px;z-index:-10;color: transparent;text-shadow: 0 0 0 black;";
-    hiddenInput.value = " " //Allows delete to be detected before input is changed
-    hiddenInput.addEventListener("input", function(e) {
-        let inputData = e.data ?? "delete"; // backspace makes null
-        window.lastKey = inputData
-        hiddenInput.value = " "; // We need a character to detect deleting
+    hiddenInput.style.cssText = "position:absolute;top: 0vh; margin: auto; left: 8vh; right:0vh; width: 8vh; height: 8vh;font-size:20px;z-index: -10;color: transparent;text-shadow: 0 0 0 black;"; // We hide the input behind a key because display: none and opacity:0 causes issues
+    hiddenInput.addEventListener("beforeinput", function(e) { // For some reason beforeinput doesn't have the same deletion problems that input has on Android
+        e.stopImmediatePropagation(); // Android ignores this and the prevent default, so this will probably be removed in the future
+        e.preventDefault(true); // We pass a value because we've hijacked the prevent default function to have a "should bypass" boolean value
+        let inputData = (e.inputType == "insertLineBreak") ? "return" : (e.data == null ? "delete" : e.data.slice(-1)); // Saves the last key press. 
+        if(!window.lastKey) { // When we first set hiddenInput's text contents to " " we can use this to check if Duplicate Mode is needed
+            window.console.warn("Enabling blocking duplicate key events. Some functionality may be lost.")
+            window.inputFix = true;
+        }
         if(window.keyboardFix) {
-            if(e.inputType == 'insertText') {
-                let isShift = (inputData.toLowerCase() != inputData);
-                if(isShift) {
-                    keyEvent("shift", "keydown")
-                    keyEvent(inputData, "keydown");
-                    keyEvent(inputData, "keyup");
-                    keyEvent("shift", "keyup")
-                } else {
-                    keyEvent(inputData, "keydown");
-                    keyEvent(inputData, "keyup");
+            if(e.inputType == "insertLineBreak") { // Detects return key press
+                keyEvent("enter", "keydown");
+                keyEvent("enter", "keyup");
+            } else {
+                const sliceInputType = e.inputType.slice(0,1); // Android doesn't constiently dispatch the correct inputType, but most of them either start with i for insert or d for delete, so this dumb solution should be good enough.
+                if(sliceInputType== 'i' && e.data) { // Android sometimes always dispatches insertCompositionText inputTypes, so checking that e.data isn't null is necessary
+                    const isDuplicate = (window.lastKey == inputData) && window.blockNextInput && window.inputFix;
+                    if(isDuplicate) { // If our key press matches the last unblocked key press and we are in duplicaye mode, ignore the input
+                        window.blockNextInput = false;
+                    } else {
+                        let isShift = (inputData.toLowerCase() != inputData);
+                        if(isShift) { // The Eaglerclient only uses e.key, e.keyCode and e.which, so we have to dispatch the shift key event separately  
+                            keyEvent("shift", "keydown");
+                            keyEvent(inputData, "keydown");
+                            keyEvent(inputData, "keyup");
+                            keyEvent("shift", "keyup");
+                        } else {
+                            keyEvent(inputData, "keydown");
+                            keyEvent(inputData, "keyup");
+                        }
+                        window.blockNextInput = true;
+                    }
+                } else if (sliceInputType == 'd' || !e.data) {
+                    keyEvent("backspace", "keydown");
+                    keyEvent("backspace", "keyup");
+                    window.blockNextInput = false; // If we delete a character, there couldn't be a duplicate of the previous key press
                 }
-            } else if (e.inputType == 'deleteContentForward' || e.inputType == 'deleteContentBackward') {
-                keyEvent("backspace", "keydown")
-                keyEvent("backspace", "keyup")
             }
         }
+        window.lastKey = inputData // Saves the last key pressed
+        hiddenInput.value = " " //This previously allowed us to have a character to delete, but beforeinput doesn't require this. This does allow us to check wether Duplicate Mode is necessary though
+
+
     }, false);
-    hiddenInput.addEventListener("keydown", function(e) {
-        if(!(e.key && e.keyCode && e.which) && !window.keyboardFix) {
-        	console.warn("Switching from keydown to input events due to invalid KeyboardEvent. Some functionality will be lost.")
+    hiddenInput.addEventListener("input", function(e) { // Since we are using beforeInput for input detection, setting the text contents of hiddenInput causes weird behavior, so we use input instead
+        if (hiddenInput.value != " ") { // Avoid updating it if not needed so Duplicate Mode doesn't throw a fit
+            hiddenInput.value = " ";
+        }
+    }, false);
+    hiddenInput.addEventListener("keydown", function(e) { // Enables Compatibility Mode if we receive an invalid key press event
+        if((e.keyCode == 229 || e.which == 229) && !window.keyboardFix) {
+            window.console.warn("Switching from keydown to input events due to invalid KeyboardEvent. Some functionality will be lost.")
             window.keyboardFix = true;
-            if(window.lastKey) {
-            	keyEvent(window.lastKey, "keydown")
-            	keyEvent(window.lastKey, "keyup")
+            if(window.lastKey) { // Resend the last saved key press (which is being tracked by the beforeinput event listener) so the transition to Compatibility Mode isn't noticeable
+                keyEvent(window.lastKey, "keydown");
+                keyEvent(window.lastKey, "keyup");
             }
         }
     }, false);
+    hiddenInput.addEventListener("blur", function(e) { // Updates window.hiddenInputFocused to reflect the actual state of the focus 
+        window.hiddenInputFocused = false;
+    });
     document.body.appendChild(hiddenInput);
     let keyboardButton = createTouchButton("keyboardButton", "inMenu");
-	keyboardButton.classList.add("smallMobileControl");
+    keyboardButton.classList.add("smallMobileControl");
     keyboardButton.style.cssText = "top: 0.5vh; margin: auto; left: 6vh; right:0vh;"
-    keyboardButton.addEventListener("touchstart", function(e){e.preventDefault();hiddenInput.blur()}, false);
-    keyboardButton.addEventListener("touchend", function(e){e.preventDefault();toggleKeyboard()}, false);
+    keyboardButton.addEventListener("touchstart", function(e){
+        e.preventDefault();
+    }, false);
+    keyboardButton.addEventListener("touchend", function(e){
+        e.preventDefault();
+        if(window.hiddenInputFocused) {
+            hiddenInput.blur()
+        } else {
+            hiddenInput.select()
+            window.hiddenInputFocused = true;
+        }
+    }, false);
     document.body.appendChild(keyboardButton);
     let placeButton = createTouchButton("placeButton", "inGame");
     placeButton.style.cssText = "right:6vh;bottom:37vh;"
@@ -411,17 +558,17 @@ function insertCanvasElements() {
     selectButton.addEventListener("touchend", function(e){mouseEvent(1, "mouseup", canvas)}, false);
     document.body.appendChild(selectButton);
     let scrollUpButton = createTouchButton("scrollUpButton", "inGame");
-	scrollUpButton.classList.add("smallMobileControl");
+    scrollUpButton.classList.add("smallMobileControl");
     scrollUpButton.style.cssText = "right:6.6vh;bottom:0vh;"
     scrollUpButton.addEventListener("touchstart", function(e){wheelEvent(canvas, -10)}, false);
     document.body.appendChild(scrollUpButton);
     let scrollDownButton = createTouchButton("scrollDownButton", "inGame");
-	scrollDownButton.classList.add("smallMobileControl");
+    scrollDownButton.classList.add("smallMobileControl");
     scrollDownButton.style.cssText = "right:25.8vh;bottom:0vh;"
     scrollDownButton.addEventListener("touchstart", function(e){wheelEvent(canvas, 10)}, false);
     document.body.appendChild(scrollDownButton);
     let throwButton = createTouchButton("throwButton", "inGame");
-	throwButton.classList.add("smallMobileControl");
+    throwButton.classList.add("smallMobileControl");
     throwButton.style.cssText = "right:13vh;bottom:0vh;"
     throwButton.addEventListener("touchstart", function(e){keyEvent("q", "keydown")}, false);
     throwButton.addEventListener("touchend", function(e){keyEvent("q", "keyup")}, false);
@@ -431,7 +578,7 @@ function insertCanvasElements() {
     sprintButton.addEventListener("touchstart", function(e) {
         keyEvent("r", "keydown");
         window.sprintLock = window.sprintLock ? null : false
-        sprintTimer = setTimeout(function(e) {
+        window.sprintTimer = setTimeout(function(e) {
             window.sprintLock = (window.sprintLock != null);
             sprintButton.classList.toggle('active');
         }, 1000);
@@ -443,22 +590,22 @@ function insertCanvasElements() {
             sprintButton.classList.remove('active');
             window.sprintLock = false
         }
-        clearTimeout(sprintTimer);
+        clearTimeout(window.sprintTimer);
     }, false);
     document.body.appendChild(sprintButton);
     let pauseButton = createTouchButton("pauseButton", "inGame");
-	pauseButton.classList.add("smallMobileControl");
+    pauseButton.classList.add("smallMobileControl");
     pauseButton.style.cssText = "top: 0.5vh; margin: auto; left: 0vh; right: 0vh;"
     pauseButton.addEventListener("touchstart", function(e){keyEvent("`", "keydown")}, false);
     pauseButton.addEventListener("touchend", function(e){keyEvent("`", "keyup")}, false);
     document.body.appendChild(pauseButton);
     let chatButton = createTouchButton("chatButton", "inGame");
-	chatButton.classList.add("smallMobileControl");
+    chatButton.classList.add("smallMobileControl");
     chatButton.style.cssText = "top: 0.5vh; margin: auto; left: 0vh; right: 14vh;"
-    chatButton.addEventListener("touchstart", function(e){keyEvent("t", "keydown")}, false);
+    chatButton.addEventListener("touchstart", function(e){keyEvent("t", "keydown")}, false); // For some reason dispatching a keyup event for this closes the chat, which is really weird
     document.body.appendChild(chatButton);
     let perspectiveButton = createTouchButton("perspectiveButton", "inGame");
-	perspectiveButton.classList.add("smallMobileControl");
+    perspectiveButton.classList.add("smallMobileControl");
     perspectiveButton.style.cssText = "top: 0.5vh; margin: auto; left: 0vh; right: 28vh;"
     perspectiveButton.addEventListener("touchstart", function(e) {
         keyEvent("f", "keydown");
@@ -470,7 +617,7 @@ function insertCanvasElements() {
     }, false);
     document.body.appendChild(perspectiveButton);
     let screenshotButton = createTouchButton("screenshotButton", "inGame");
-	screenshotButton.classList.add("smallMobileControl");
+    screenshotButton.classList.add("smallMobileControl");
     screenshotButton.style.cssText = "top: 0.5vh; margin: auto; left: 28vh; right: 0vh;"
     screenshotButton.addEventListener("touchstart", function(e) {
         keyEvent("f", "keydown");
@@ -483,7 +630,7 @@ function insertCanvasElements() {
     document.body.appendChild(screenshotButton);
     let coordinatesButton = createTouchButton("coordinatesButton", "inGame");
 	coordinatesButton.classList.add("smallMobileControl");
-    coordinatesButton.style.cssText = "top: 0.5vh; margin: auto; left: 14vh; right: 0vh;"
+    coordinatesButton.style.cssText = "top: 0.5vh; margin: auto; left: 14vh; right: 0vh;"    
     coordinatesButton.addEventListener("touchstart", function(e) {
         keyEvent("f", "keydown");
         keyEvent("3", "keydown");
@@ -497,6 +644,19 @@ function insertCanvasElements() {
 // CSS for touch screen buttons, along with fixing iOS's issues with 100vh ignoring the naviagtion bar, and actually disabling zoom because safari ignores user-scalable=no :(
 let customStyle = document.createElement("style");
 customStyle.textContent = `
+    html, body, canvas {
+        height: 100svh !important;
+        height: -webkit-fill-available !important;
+        touch-action: pan-x pan-y;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        outline: none;
+        -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    }
     .mobileControl {
         position: absolute; 
         width: 9vh;
@@ -526,10 +686,6 @@ customStyle.textContent = `
       width: 6vh;
       height: 6vh;
       margin: 1vh 0vh;
-    }
-    html, body {
-        height: -webkit-fill-available !important;
-        touch-action: pan-x pan-y;
     }
     .hide {
         display: none;
